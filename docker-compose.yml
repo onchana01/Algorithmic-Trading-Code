@@ -1,0 +1,43 @@
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8050:8050"
+    environment:
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - ALPACA_API_KEY=${ALPACA_API_KEY}
+      - ALPACA_SECRET_KEY=${ALPACA_SECRET_KEY}
+    volumes:
+      - .:/app
+    depends_on:
+      influxdb:
+        condition: service_healthy  
+    command: ["python", "main.py"]
+
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8087:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=adminpassword
+      - DOCKER_INFLUXDB_INIT_ORG=onchana
+      - DOCKER_INFLUXDB_INIT_BUCKET=trading_data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  influxdb-data:
